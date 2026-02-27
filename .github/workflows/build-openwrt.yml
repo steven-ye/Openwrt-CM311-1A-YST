@@ -278,13 +278,13 @@ jobs:
         run: |
           # Set up compilation source code
           source_branch_input="${{ inputs.source_branch }}"
-          REPO_NAME="${source_branch_input%:*}"
-          REPO_BRANCH="${source_branch_input#*:}"
-          if [[ "${REPO_NAME}" == "openwrt" ]]; then
+          op_source="${source_branch_input%:*}"
+          op_branch="${source_branch_input#*:}"
+          if [[ "${op_source}" == "openwrt" ]]; then
               GITHUB_REPO="openwrt/openwrt"
-          elif [[ "${REPO_NAME}" == "lede" ]]; then
+          elif [[ "${op_source}" == "lede" ]]; then
               GITHUB_REPO="coolsnowwolf/lede"
-          elif [[ "${REPO_NAME}" == "immortalwrt" ]]; then
+          elif [[ "${op_source}" == "immortalwrt" ]]; then
               GITHUB_REPO="immortalwrt/immortalwrt"
           else
               echo "Unknown source code repository."
@@ -293,10 +293,12 @@ jobs:
 
           REPO_URL="https://github.com/${GITHUB_REPO}"
 
-          if [[ "${REPO_BRANCH}" =~ [0-9]+\.[0-9].+ ]]; then
-              REPO_BRANCH = "openwrt-${REPO_BRANCH}"
+          if [[ "${op_branch}" =~ [0-9]+\.[0-9].+ ]]; then
+              REPO_BRANCH = "openwrt-${op_branch}"
+          else
+              REPO_BRANCH = "${op_branch}"
           fi
-          TAGS_NAME = "${op_branch}-${op-branch}"
+          TAGS_NAME = "${op_source}-${op_branch}"
 
           # Clone source code
           git clone -q --single-branch --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} openwrt
