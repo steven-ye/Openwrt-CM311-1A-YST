@@ -12,13 +12,16 @@ on:
       source_branch:
         description: "Select the source branch"
         required: false
-        default: "immortalwrt-master"
+        default: "immortalwrt:24.10.5"
         type: choice
         options:
-          - openwrt-main
-          - lede-master
-          - immortalwrt-master
-          - immortalwrt-test
+          - openwrt:main
+          - openwrt:24.10.5
+          - openwrt:24.10.4
+          - immortalwrt:master
+          - immortalwrt:24.10.5
+          - immortalwrt:24.10.4
+          - lede:master
       openwrt_board:
         description: "Select device board"
         required: false
@@ -161,13 +164,17 @@ on:
         default: "5.10.y_5.15.y_6.1.y"
         type: choice
         options:
-          - 5.4.y
           - 5.10.y
           - 5.15.y
           - 6.1.y
           - 6.6.y
+          - 6.12.y
+          - 6.18.y
+          - 5.10.y_5.15.y
           - 6.1.y_6.6.y
-          - 5.10.y_5.15.y_6.1.y
+          - 6.12.y_6.18.y
+          - 6.1.y_6.12.y
+          - 6.1.y_6.18.y
       auto_kernel:
         description: "Auto use the latest kernel"
         required: false
@@ -201,12 +208,12 @@ on:
       builder_name:
         description: "Set OpenWrt builder signature."
         required: false
-        default: "ophub"
+        default: "steven"
         type: choice
         options:
           - ophub
           - angel
-          - yourname
+          - steven
 
 env:
   FEEDS_CONF: config/${{ inputs.source_branch }}/feeds.conf.default
@@ -270,22 +277,26 @@ jobs:
         if: ${{ steps.init.outputs.status }} == 'success' && !cancelled()
         run: |
           # Set up compilation source code
-          if [[ "${{ inputs.source_branch }}" == *"openwrt"* ]]; then
-              REPO_URL="https://github.com/openwrt/openwrt"
-              REPO_BRANCH="main"
-              TAGS_NAME="official"
-          elif [[ "${{ inputs.source_branch }}" == *"lede"* ]]; then
-              REPO_URL="https://github.com/coolsnowwolf/lede"
-              REPO_BRANCH="master"
-              TAGS_NAME="lede"
-          elif [[ "${{ inputs.source_branch }}" == *"immortalwrt"* ]]; then
-              REPO_URL="https://github.com/immortalwrt/immortalwrt"
-              REPO_BRANCH="master"
-              TAGS_NAME="immortalwrt"
+          source_branch_input="${{ inputs.source_branch }}"
+          REPO_NAME="${source_branch_input%:*}"
+          REPO_BRANCH="${source_branch_input#*:}"
+          if [[ "${REPO_NAME}" == "openwrt" ]]; then
+              GITHUB_REPO="openwrt/openwrt"
+          elif [[ "${REPO_NAME}" == "lede" ]]; then
+              GITHUB_REPO="coolsnowwolf/lede"
+          elif [[ "${REPO_NAME}" == "immortalwrt" ]]; then
+              GITHUB_REPO="immortalwrt/immortalwrt"
           else
               echo "Unknown source code repository."
               exit 1
           fi
+
+          REPO_URL="https://github.com/${GITHUB_REPO}"
+
+          if [[ "${REPO_BRANCH}" =~ [0-9]+\.[0-9].+ ]]; then
+              REPO_BRANCH = "openwrt-${REPO_BRANCH}"
+          fi
+          TAGS_NAME = "${op_branch}-${op-branch}"
 
           # Clone source code
           git clone -q --single-branch --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} openwrt
