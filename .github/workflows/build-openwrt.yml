@@ -294,11 +294,11 @@ jobs:
           REPO_URL="https://github.com/${GITHUB_REPO}"
 
           if [[ "${op_branch}" =~ [0-9]+\.[0-9].+ ]]; then
-              REPO_BRANCH = "openwrt-${op_branch}"
+              REPO_BRANCH="openwrt-${op_branch}"
           else
-              REPO_BRANCH = "${op_branch}"
+              REPO_BRANCH="${op_branch}"
           fi
-          TAGS_NAME = "${op_source}-${op_branch}"
+          TAGS_NAME="${op_source}-${op_branch}"
 
           # Clone source code
           git clone -q --single-branch --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} openwrt
