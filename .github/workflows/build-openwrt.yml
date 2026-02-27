@@ -15,13 +15,13 @@ on:
         default: "openwrt:24.10.5"
         type: choice
         options:
-          - openwrt:main
-          - openwrt:24.10.5
-          - openwrt:24.10.4
-          - immortalwrt:master
-          - immortalwrt:24.10.5
-          - immortalwrt:24.10.4
-          - lede:master
+          - openwrt-main
+          - openwrt-24.10.5
+          - openwrt-24.10.4
+          - immortalwrt-master
+          - immortalwrt-24.10.5
+          - immortalwrt-24.10.4
+          - lede-master
       openwrt_board:
         description: "Select device board"
         required: false
@@ -278,8 +278,8 @@ jobs:
         run: |
           # Set up compilation source code
           source_branch_input="${{ inputs.source_branch }}"
-          op_source="${source_branch_input%:*}"
-          op_branch="${source_branch_input#*:}"
+          op_source="${source_branch_input%-*}"
+          op_branch="${source_branch_input#*-}"
           if [[ "${op_source}" == "openwrt" ]]; then
               GITHUB_REPO="openwrt/openwrt"
           elif [[ "${op_source}" == "lede" ]]; then
@@ -309,6 +309,7 @@ jobs:
           echo "build_tag=OpenWrt_${TAGS_NAME}_${{ inputs.openwrt_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
           echo -e "REPO_URL: [ ${REPO_URL} ]\nREPO_BRANCH: [ ${REPO_BRANCH} ]\nTAGS_NAME: [ ${TAGS_NAME} ]"
           df -hT ${PWD}
+          echo "REPO_NAME=${op_source}" >> ${GITHUB_OUTPUT}
           echo "REPO_URL=${REPO_URL}" >> ${GITHUB_OUTPUT}
           echo "TAGS_NAME=${TAGS_NAME}" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
