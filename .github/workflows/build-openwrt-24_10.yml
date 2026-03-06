@@ -3,8 +3,18 @@ name: Build OpenWrt 24.10 for CM311-1a (BLE HID Support)
 # 触发条件：手动触发（推荐）/ 推送代码
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
+    inputs:
+      source_branch:
+        description: "Select the source branch"
+        required: false
+        default: "immortalwrt-24.10.5"
+        type: choice
+        options:
+          - openwrt-main
+          - openwrt-24.10.5
+          - immortalwrt-master
+          - immortalwrt-24.10.5
+          - lede-master
 
 permissions:
   contents: write
