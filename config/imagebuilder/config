@@ -531,18 +531,24 @@ CONFIG_BUSYBOX_DEFAULT_FALLOCATE=y
 
 # CM311-1a SDIO 蓝牙
 CONFIG_KMOD_BTSDIO=y  
+CONFIG_KMOD_AMLOGIC_BT=y
 
-# === 24.10 原生 BLE HID 核心（替代 hogd） ===
+# === 24.10 蓝牙内核驱动（核心） ===
 CONFIG_BT=y
 CONFIG_BT_LE=y
 CONFIG_BT_BREDR=y
 CONFIG_BT_HIDP=y
 CONFIG_BT_GATT=y
 CONFIG_BT_GATT_CLIENT=y
-CONFIG_BT_GATT_SERVER=y
 CONFIG_BT_L2CAP=y
+CONFIG_KMOD_BLUETOOTH=y
 CONFIG_KMOD_BLUETOOTH_HID=y
-CONFIG_KMOD_INPUT_HID=y
 CONFIG_KMOD_INPUT_EVDEV=y
 CONFIG_KMOD_HID_GENERIC=y
 CONFIG_KMOD_HIDRAW=y
+
+# === 24.10 新版 bluez 包（整合后的命名） ===
+CONFIG_PACKAGE_bluez-daemon=y       # 替代 bluez/bluetoothd
+CONFIG_PACKAGE_bluez-utils=y        # 整合 bluetoothctl/btattach/hid2hci
+CONFIG_PACKAGE_bluez-libs=y         # 依赖库
+CONFIG_PACKAGE_bluetooth=y          # 基础蓝牙工具集
