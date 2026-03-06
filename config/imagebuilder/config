@@ -546,12 +546,3 @@ CONFIG_KMOD_INPUT_HID=y
 CONFIG_KMOD_INPUT_EVDEV=y
 CONFIG_KMOD_HID_GENERIC=y
 CONFIG_KMOD_HIDRAW=y
-
-# === 24.10 蓝牙工具（替代 hogd） ===
-CONFIG_PACKAGE_bluez=y
-CONFIG_PACKAGE_bluez-daemon=y
-CONFIG_PACKAGE_bluez-libs=y
-CONFIG_PACKAGE_bluez-btattach=y
-CONFIG_PACKAGE_bluez-hid2hci=y
-CONFIG_PACKAGE_bluetoothctl=y
-CONFIG_PACKAGE_bluetoothd=y
