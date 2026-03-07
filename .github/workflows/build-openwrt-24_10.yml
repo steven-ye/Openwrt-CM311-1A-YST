@@ -51,9 +51,6 @@ jobs:
           wget -O $PATCH_DIR/999-cm311-1a-s905l3a.patch \
           https://raw.githubusercontent.com/ophub/amlogic-s9xxx-openwrt/main/patchs/openwrt-24.10/999-cm311-1a-s905l3a.patch \
           || echo "CM311-1a 补丁下载失败，使用兼容配置"
-          # 替换下载源
-          cp feeds.conf.default feeds.conf.default.bak
-          sed -i 's|mirror.nju.edu.cn/immortalwrt|downloads.immortalwrt.org|g' feeds.conf.default
           ./scripts/feeds update -a -t 300 --force || ./scripts/feeds update -a -t 300 --force
           ./scripts/feeds install -a -f
 
@@ -61,13 +58,13 @@ jobs:
       - name: Generate CM311-1a .config
         run: |
           cd openwrt
-          make defconfig TARGET=amlogic TARGET_SUBTARGET=s905x3
+          make defconfig TARGET=amlogic TARGET_SUBTARGET=s905l3a
           cat >> .config << EOF
           # 基础硬件配置（S905L3A 核心）
           CONFIG_TARGET_amlogic=y
           CONFIG_TARGET_amlogic_s905l3a=y
           CONFIG_TARGET_amlogic_s905l3a_DEVICE_cm311-1a=y
-          CONFIG_KERNELVERSION="${{ github.event.inputs.kernel_ver }}"
+          CONFIG_KERNELVERSION="${{ inputs.kernel_ver }}"
           CONFIG_TARGET_ROOTFS_EXT4FS=y
           CONFIG_TARGET_ROOTFS_SIZE=1024
           
@@ -101,7 +98,7 @@ jobs:
 
       # 5. 编译固件（增加失败检测）
       - name: Build OpenWrt firmware
-        id: build_check
+        id: compile
         continue-on-error: true  # 编译失败不中断脚本
         run: |
           cd openwrt
@@ -109,59 +106,42 @@ jobs:
           make -j$(nproc) download V=s || make -j1 download V=s
           make -j$(($(nproc)-1)) V=s || make -j1 V=s
           # 编译成功标记
-          echo "build_success=true" >> $GITHUB_OUTPUT
+          echo "status=success" >> $GITHUB_OUTPUT
 
       # 6. 自动识别固件目录 + 重命名（核心修复）
-      - name: Find & Rename firmware
-        id: package
-        if: steps.build_check.outputs.build_success == 'true'  # 仅编译成功时执行
+      - name: Clear server space
+        id: clean
+        if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
         run: |
-          cd openwrt
-          # 核心：自动查找 amlogic 架构的固件目录（兼容 s905x3/s905l3 等子目录）
-          FIRMWARE_DIR=$(find bin/targets/amlogic/ -type d -name "*s905*" | head -n 1)
-          if [ -z "$FIRMWARE_DIR" ]; then
-            # 若未找到，使用默认目录
-            FIRMWARE_DIR="bin/targets/amlogic/s905x3"
-            mkdir -p $FIRMWARE_DIR
-          fi
-          echo "固件目录：$FIRMWARE_DIR"
-          
-          # 查找固件文件（兼容 img.gz/bin 格式）
-          FIRMWARE_FILE=$(find $FIRMWARE_DIR -name "*.img.gz" | head -n 1)
-          if [ -z "$FIRMWARE_FILE" ]; then
-            FIRMWARE_FILE=$(find $FIRMWARE_DIR -name "*.bin" | head -n 1)
-          fi
-          
-          # 检查固件是否存在
-          if [ -z "$FIRMWARE_FILE" ]; then
-            echo "未找到固件文件！"
-            exit 1
-          fi
-          
-          # 重命名固件
-          FIRMWARE_NEW="$FIRMWARE_DIR/OpenWrt-24.10-CM311-1a-$(date +%Y%m%d).img.gz"
-          mv $FIRMWARE_FILE $FIRMWARE_NEW
-          
-          # 输出路径
-          echo "firmware_path=$FIRMWARE_NEW" >> $GITHUB_OUTPUT
-          echo "firmware_name=$(basename $FIRMWARE_NEW)" >> $GITHUB_OUTPUT
-          ls -l $FIRMWARE_NEW
+          # Clean up server space
+          cd openwrt/
+          [[ -d "output" ]] || mkdir output
+          cp -f bin/targets/*/*/*rootfs.tar.gz output/
+          cp -f .config output/config
+          rm -rf $(ls . | grep -v "^output$" | xargs) 2>/dev/null
+
+          # Generate sha256sum file
+          cd output/
+          for file in *; do [[ ! -d "${file}" ]] && sha256sum "${file}" >"${file}.sha"; done
+
+          # Set output information
+          df -hT ${PWD}
+          echo "status=success" >> ${GITHUB_OUTPUT}
 
       # 7. 上传固件到 Release（仅编译成功时执行）
       - name: Upload the packaged OpenWrt
-        if: steps.build_check.outputs.build_success == 'true'
         uses: ncipollo/release-action@main
+        if: ${{ steps.clean.outputs.status }} == 'success' && !cancelled()
         with:
-          tag: ${{ github.event.inputs.release_tag }}
-          name: ${{ github.event.inputs.release_name }}
+          tag: ${{ inputs.release_tag }}
+          name: ${{ inputs.release_name }}
           body: |
             ## OpenWrt 24.10 适配 CM311-1a
             - 硬件：CM311-1a (S905L3A)
             - 核心功能：支持非标准 BLE 蓝牙鼠标（内置 bluez-daemon/bluez-utils）
             - 内核版本：6.6
             - 编译环境：Ubuntu 24.04
-            - 固件名称：${{ steps.package.outputs.firmware_name }}
-          artifacts: ${{ steps.package.outputs.firmware_path }}
+          artifacts: openwrt/output/*
           allowUpdates: true
           draft: false
           prerelease: false
@@ -169,7 +149,7 @@ jobs:
 
       # 8. 编译失败提醒
       - name: Build failed notification
-        if: steps.build_check.outputs.build_success != 'true'
+        if: ${{ steps.compile.outputs.status }} != 'success'
         run: |
           echo "===== 固件编译失败 ====="
           # 输出编译日志（便于排查）
