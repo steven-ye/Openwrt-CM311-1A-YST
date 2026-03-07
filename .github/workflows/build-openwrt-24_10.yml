@@ -126,6 +126,7 @@ jobs:
 
           # Set output information
           df -hT ${PWD}
+          echo "firmware_name=OpenWrt-24.10-CM311-1a-$(date +%Y%m%d)"
           echo "status=success" >> ${GITHUB_OUTPUT}
 
       # 7. 上传固件到 Release（仅编译成功时执行）
@@ -141,6 +142,7 @@ jobs:
             - 核心功能：支持非标准 BLE 蓝牙鼠标（内置 bluez-daemon/bluez-utils）
             - 内核版本：6.6
             - 编译环境：Ubuntu 24.04
+            - 固件名称：${{ steps.clean.outputs.firmware_name }}
           artifacts: openwrt/output/*
           allowUpdates: true
           draft: false
