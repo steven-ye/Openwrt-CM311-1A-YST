@@ -111,7 +111,7 @@ jobs:
       # 6. 自动识别固件目录 + 重命名（核心修复）
       - name: Clear server space
         id: clean
-        if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.compile.outputs.status == 'success' && !cancelled() }}
         run: |
           # Clean up server space
           cd openwrt/
@@ -132,7 +132,7 @@ jobs:
       # 7. 上传固件到 Release（仅编译成功时执行）
       - name: Upload the packaged OpenWrt
         uses: ncipollo/release-action@main
-        if: ${{ steps.clean.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.clean.outputs.status == 'success' && !cancelled() }}
         with:
           tag: ${{ inputs.release_tag }}
           name: ${{ inputs.release_name }}
@@ -151,7 +151,7 @@ jobs:
 
       # 8. 编译失败提醒
       - name: Build failed notification
-        if: ${{ steps.compile.outputs.status }} != 'success'
+        if: ${{ steps.compile.outputs.status  != 'success' }}
         run: |
           echo "===== 固件编译失败 ====="
           # 输出编译日志（便于排查）
